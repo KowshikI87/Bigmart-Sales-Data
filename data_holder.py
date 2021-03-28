@@ -28,3 +28,28 @@ Outlet_Location_Type         8523 non-null object ---> 1 hot encoding
 Outlet_Type                  8523 non-null object ----> 1 hot encoding
 Item_Outlet_Sales            8523 non-null float64 ---> Scale feature?
 
+
+sales_data_train_num 
+sales_data_num_attr
+
+
+
+sales_data_train_cat
+sales_data_cat_attr
+
+There are couple of transformations to do here. First:
+
+#Item_Identifier: Drop this column and replace it with a column which just takes the first two letter each Item_Identifier. We then need to use one hot encoding for each of those categories (total of 3 categories)
+
+#Item_Fat_Content: As stated before, this column is used to keep track of whether an item is low fat or not. We can replace it with a simple binary field where 1 corresponds to Low Fat and 0 corresponds to non low fat food
+
+Item_Type: One hot encoding
+
+Outlet_Identifier: One hot encoding
+
+#Outlet_Size: Figure out a impute strategy and then once imptuation is done, use ordinal encoding
+
+Outlet_Location_Type: ordinal encoding
+
+Outlet_Type: one hot encoding
+
