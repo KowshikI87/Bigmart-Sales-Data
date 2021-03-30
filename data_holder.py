@@ -23,7 +23,7 @@ Item_MRP                     8523 non-null float64 ---> scale feature
 Outlet_Identifier            8523 non-null object ---> 1 hot encoding
 Outlet_Establishment_Year    8523 non-null int64 ---> transform to Time till established
 Outlet_Size                  6113 non-null object ---> ordinal encoding
-Outlet_Location_Type         8523 non-null object ---> 1 hot encoding
+Outlet_Location_Type         8523 non-null object ---> ordinal encoding
 Outlet_Type                  8523 non-null object ----> 1 hot encoding
 Item_Outlet_Sales            8523 non-null float64 ---> Scale feature?
 
