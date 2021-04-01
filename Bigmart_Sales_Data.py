@@ -1,3 +1,12 @@
+'''
+Some general notes: 
+    - Note that all column numbers are 0 based
+    - When talking about ndarray, we are talking about 1D/2D array primarily
+    - We would usually want our custom transformers to work seamless with Scikit_learn functionalities (such as pipelines).
+      Thus, all the transformers here have three method: fit(), transform() and fit_transform() and their use is quite similar
+      to Scikit Learn's transformers.
+'''
+
 #Generic Data Science Pipelins Import
 import pandas as pd
 import numpy as np
@@ -23,10 +32,44 @@ scaled_cols = [sales_data.columns.get_loc("Item_Weight"),
                sales_data.columns.get_loc("Outlet_Establishment_Year")
               ]
 
-#Note that all column numbers are 0 based
+
+def future_value(rate,periods,pmt, pv):
+    '''
+    Calculates future value from present value and annuity
+    (float, int, int, float, float) ---> (float)
+
+    Argument Names
+        rate: rate of return (expressed in percentages. Example: 8% ===> Enter 0.08)
+        periods: how many periods the money accumulates for
+        pmt: periodic deposit (assumed to be made at the end of a year)
+        pv: present value of investment
+
+    Some Extra Notes:
+        We start at Period 0 (present time). From Period 0-1, only present value/current savings earn interest
+        We assume that first periodic payment is made at the end of Period 0 or after first year
+        From Period 1-2, money accumulated so far plus periodic deposit made at the begining of Period 1 earns interest
+        At the end of Period 2, same periodic payment is made. From Period 2-3, money accumualted so far plus period deposit earns interest
+        This pattern continues till the end
+        For the last period, whatever money is accumulated plus last periodic deposit which have not had time to earn interest is returned as future value
+    '''
+
+
 class SimpleImputerCustom(BaseEstimator, TransformerMixin):
-    def __init__(self, cols):
-        self.cols = cols
+    '''
+    Fill in missing values in numerical column(s) using the median strategy
+
+    Usage is similar to that of SimpleImputer from sklearn.impute. 
+    
+    When creating the instance object, pass in the column indices for which you want to use the imputer for
+
+    Returns an ndarray where the imputed column(s) indices remain unchanged
+    '''
+    def __init__(self, cols_idx):
+        '''
+        Argument Names:
+            cols_idx: list of column indices (0 based)
+        '''
+        self.cols_idx = cols_idx
     def fit(self, X):
         return self
     def transform(self, X):
@@ -35,50 +78,76 @@ class SimpleImputerCustom(BaseEstimator, TransformerMixin):
         #Imputing Data
         #print(X[:, self.cols].shape)
 
-        if len(self.cols) == 1:
+        if len(self.cols_idx) == 1:
             #create a duplicate of the same column so we get 2d array so we can use simple imputer
             #at the end the duplicate column will be discarded anyways
-            col_data_to_impute = np.concatenate([X[:, self.cols],X[:, self.cols]], axis = 1)
+            col_data_to_impute = np.concatenate([X[:, self.cols_idx],X[:, self.cols_idx]], axis = 1)
         else:
-            col_data_to_impute = X[:, self.cols]
+            col_data_to_impute = X[:, self.cols_idx]
 
         imputed_data = imputer.fit_transform(col_data_to_impute) #input needs to be 2d array
-        for c in range(0, len(self.cols)):
-            X[:, self.cols[c]] = imputed_data[:, c]
+        for c in range(0, len(self.cols_idx)):
+            X[:, self.cols_idx[c]] = imputed_data[:, c]
         return X
 
 class StandardScalerCustom(BaseEstimator, TransformerMixin):
-    def __init__(self, cols):
-        self.cols = cols
+    '''
+    Scales numerical column(s) using StandardScaler from sklearn.preprocessing . Usage is same as in using StandardScaler. 
+
+    Returns an ndarray where the scaled column(s) indices remain unchanged
+    '''
+    def __init__(self, cols_idx):
+        '''
+        Argument Names:
+            cols_idx: list of column indices (0 based) that are to be scaled
+        '''
+        self.cols_idx = cols_idx
     def fit(self, X):
         return self
     def transform(self, X):
         standard_scaler = StandardScaler()
         #Scaling Data
-        if len(self.cols) == 1:
+        if len(self.cols_idx) == 1:
             #create a duplicate of the same column so we get 2d array so we can use simple imputer
             #at the end the duplicate column will be discarded anyways
-            col_data_to_impute = np.concatenate([X[:, self.cols],X[:, self.cols]], axis = 1)
+            col_data_to_impute = np.concatenate([X[:, self.cols_idx],X[:, self.cols_idx]], axis = 1)
         else:
-            col_data_to_impute = X[:, self.cols]
+            col_data_to_impute = X[:, self.cols_idx]
 
         scaled_data = standard_scaler.fit_transform(col_data_to_impute) 
-        for c in range(0, len(self.cols)):
-            X[:, self.cols[c]] = scaled_data[:, c]
+        for c in range(0, len(self.cols_idx)):
+            X[:, self.cols_idx[c]] = scaled_data[:, c]
         
         return X
 
 class OutletAgeAdder(BaseEstimator, TransformerMixin):
-    def __init__(self, col_num, current_year):
-        self.col_num = col_num
+    '''
+    Modifies the Outlet_Establishment_Age to Outlet_Age
+    '''
+    def __init__(self, col_idx, current_year):
+        '''
+        Argument Names:
+            cols_idx: index of the column containing "Outlet_Establishment_Age" (0 based)
+            current_year: Current Year
+
+        Returns an ndarray where the indices of ndarray passed in remain unchanged
+        '''
+        self.col_idx = col_idx
         self.current_year = current_year
     def fit(self, X, y = None):
         return self
     def transform(self, X):
-        outlet_age = self.current_year - X[:, self.col_num]
-        return np.c_[X[:, :self.col_num], outlet_age, X[:, self.col_num + 1:]]
+        outlet_age = self.current_year - X[:, self.col_idx]
+        return np.c_[X[:, :self.col_idx], outlet_age, X[:, self.col_idx + 1:]]
 
 class ConvertFloat(BaseEstimator, TransformerMixin):
+    '''
+    Converts the datatype of an ndarray to float. This transformer should only be used
+    after making sure that all the columns can be casted to float
+
+    Returns an ndarray where the indices of ndarray passed in remain unchanged
+
+    '''
     def __init__(self):
         pass
     def fit(self, X, y = None):
@@ -97,20 +166,24 @@ num_pipeline = Pipeline([
     ])
 
 
-# num_pipeline = Pipeline([
-#     ('imputer', SimpleImputer(missing_values=np.nan, strategy="median")),
-#     ('outlet_age_adder', OutletAgeAdder(2013)),
-#     ('std_scaler', StandardScaler()),
-#     ])
-
-
 #Categorical Columns Preprocessing Pipeline
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 
 #Tansforming Item_Identifier
 class ItemIdTransform(BaseEstimator, TransformerMixin):
-    def __init__(self, col_num):
-        self.col_num = col_num
+    '''
+    Transforms the "Item_Identifier" column such that only the first two charcter of the Item_Identifier is left
+
+    Returns an ndarray where the indices of ndarray passed in remain unchanged 
+    '''
+    def __init__(self, col_idx):
+        '''
+        Argument Names:
+            cols_idx: index of the column containing "Item_Identifier"
+
+        Returns an ndarray where the indices of ndarray passed in remain unchanged
+        '''
+        self.col_idx = col_idx
 
     def fit(self, X, y = None):
         return self
@@ -119,8 +192,8 @@ class ItemIdTransform(BaseEstimator, TransformerMixin):
         id_transform = np.zeros(shape = (X.shape[0], 1)).astype(str)
         X = X.copy().astype(str)
         for row in range(0, X.shape[0]):
-            id_transform[row] = X[row, self.col_num][0:2]
-        return np.c_[X[:, :self.col_num], id_transform, X[:, self.col_num + 1:]]
+            id_transform[row] = X[row, self.col_idx][0:2]
+        return np.c_[X[:, :self.col_idx], id_transform, X[:, self.col_idx + 1:]]
 
 class ItemIdTransformV1(BaseEstimator, TransformerMixin):
     def __init__(self):
@@ -136,9 +209,20 @@ class ItemIdTransformV1(BaseEstimator, TransformerMixin):
             id_transform[row] = X[row][0:2]
         return id_transform
 
-class ItemFatContentTrnsfrm(BaseEstimator, TransformerMixin): #Not Changing Outlet Size
-    def __init__(self, col_num, replcm_dict):
-        self.col_num = col_num
+class ItemFatContentTrnsfrm(BaseEstimator, TransformerMixin): 
+    '''
+    Transforms Item_Fat_Content such that it only contains 1 if the item is low fat or 0 otherwise.
+    '''
+    def __init__(self, col_idx, replcm_dict):
+        '''
+        Argument Names:
+            cols_idx: index of the column containing "Item_Fat_Content"
+            replcm_dict: contains key: value pair where key contains one of the category currently present in "Item_Fat_Content" and 
+                value is 0 or 1; 1 if that category correspond to low fat item or 0 otherwise
+
+        Returns an ndarray where the indices of ndarray passed in remain unchanged
+        '''
+        self.col_idx = col_idx
         self.replcm_dict = replcm_dict
     
     def fit(self, X, y = None):
@@ -146,11 +230,11 @@ class ItemFatContentTrnsfrm(BaseEstimator, TransformerMixin): #Not Changing Outl
     
     def transform(self, X):
         #Tips from here:https://stackoverflow.com/questions/3403973/fast-replacement-of-values-in-a-numpy-array
-        fat_content_trnsfrm = X.copy()[:, self.col_num]
+        fat_content_trnsfrm = X.copy()[:, self.col_idx]
         #print(type(X))
         for k, v in self.replcm_dict.items():
             fat_content_trnsfrm[fat_content_trnsfrm == k] = v
-        return np.c_[X[:, :self.col_num], fat_content_trnsfrm, X[:, self.col_num + 1:]]
+        return np.c_[X[:, :self.col_idx], fat_content_trnsfrm, X[:, self.col_idx + 1:]]
 
 
 class ItemFatContentTrnsfrmV1(BaseEstimator, TransformerMixin):
@@ -168,7 +252,17 @@ class ItemFatContentTrnsfrmV1(BaseEstimator, TransformerMixin):
         return np.c_[fat_content_trnsfrm.astype(int)]
 
 class OutletSizeImpute(BaseEstimator, TransformerMixin):
+    '''
+        Imputes missing value of Outlet_Size with a replacement value
+
+        Returns an ndarray where the indices of ndarray passed in remain unchanged
+    '''
     def __init__(self, col_num, replcm_val):
+        '''
+        Argument Names:
+            cols_idx: index of the column containing "Outlet_Size"
+            replcm_val: the value to replace missing values with
+        '''
         self.col_num = col_num
         self.replcm_val = replcm_val
     
@@ -200,7 +294,17 @@ class OutletSizeImputeV1(BaseEstimator, TransformerMixin):
         return np.c_[outlet_size_trnsfrm]
 
 class OrdinalEncoderCustom(BaseEstimator, TransformerMixin):
+    '''
+    Encodes ordinal data. Usage is similar to that of OrdinalEncoder from sklearn.preprocessing
+
+    Returns an ndarray where the encoded column(s) indices remain unchanged
+    '''
     def __init__(self, cols, categories):
+        '''
+        Argument Names:
+            cols_idx: indices of the categorical columns to encode
+            categories: the categories argument for OrdinalEncoder
+        '''
         self.cols = cols
         self.categories = categories
 
@@ -208,7 +312,6 @@ class OrdinalEncoderCustom(BaseEstimator, TransformerMixin):
         return self
     
     def transform(self, X):
-        from sklearn.preprocessing import OrdinalEncoder
         X = X.copy().astype(object) #Need object dtype to use ordinal encoding
         ordinal_encoder = OrdinalEncoder(categories = self.categories)
         cols_ord_encoded = ordinal_encoder.fit_transform(X[:, self.cols])
@@ -223,6 +326,11 @@ class OrdinalEncoderCustom(BaseEstimator, TransformerMixin):
         return X
 
 class OneHotEncodingCustom(BaseEstimator, TransformerMixin):
+    '''
+    One hot encodes categorical data. Usage is similar to that of OneHotEncoder from sklearn.preprocessing
+
+    Returns an ndarray where the encoded column(s) are at the end of the array
+    '''
     def __init__(self, cols_names, cols_idx):
         self.cols_names = cols_names
         self.cols_idx = cols_idx
@@ -231,7 +339,6 @@ class OneHotEncodingCustom(BaseEstimator, TransformerMixin):
         return self
     
     def transform(self, X): 
-        from sklearn.preprocessing import OneHotEncoder
         X = X.copy()
         one_hot_encoder = OneHotEncoder()
         #one hot encoding data
@@ -257,12 +364,10 @@ class OneHotEncodingCustom(BaseEstimator, TransformerMixin):
 item_fat_content_replcm_dict = {'Low Fat': 1, 'Regular': 0, 'LF': 1, 'reg': 0, 'low fat' : 1}
 
 #Categorical Identifier
-
 ##Small will be encoded as 0, Medium as 1 and High as 2
 outlet_size_ord_catgs = ['Small', 'Medium', 'High']
 ##Tier 1 will be encoded as 0, Tier 2 as 1 and Tier 3 as 2
 outlet_location_type_ord_catgs = ['Tier 1', 'Tier 2', 'Tier 3']
-
 
 one_hot_coding_cols_names = ["Item_Identifier", "Item_Type", "Outlet_Identifier", "Outlet_Type"]
 
@@ -272,6 +377,7 @@ one_hot_coding_cols_idx = [sales_data.columns.get_loc("Item_Identifier"),
                        sales_data.columns.get_loc("Outlet_Type")
                       ]
 
+#Will be used to contain the one hot encoded column names
 one_hot_coding_cols_catgs = []
 
 cat_pipeline = Pipeline([
@@ -282,11 +388,7 @@ cat_pipeline = Pipeline([
     ("one_hot_encoding", OneHotEncodingCustom(one_hot_coding_cols_names, one_hot_coding_cols_idx))
     ])
 
-#mistake in outlet_location_Type. It should have been to something else for ordinal_encoding
 
-#After data proprocessing, Columns are: 
-# Numerical Columns: ITEM_WEIGHT, ITEM_VISIBILITY, ITEM_MRP, OUTLET_AGE, 
-# Categorical Columns: ITEM_FAT_CONTENT_ENC, OUTLET_SIZE, ITEM_LOCATION_TYPE, ITEM_IDENTIFIER_CATGS, ITEM_TYPE_CATGS, OUTLET_IDENTIFIER_CATGS, OUTLET_TYPE_CATGs
 preprocessing_full_pipeline = Pipeline([('num', num_pipeline),
                           ('cat', cat_pipeline),
                           ('convert_float', ConvertFloat())
@@ -303,13 +405,13 @@ def create_train_test_set(df, label_col_name):
 
     return df_train, df_train_labels, df_test, df_test_labels
 
-
-#Create test and training data
-sales_data_train, sales_data_train_labels, sales_data_test, sales_data_test_labels = create_train_test_set(sales_data, "Item_Outlet_Sales")
-
-sales_data_prepared = preprocessing_full_pipeline.fit_transform(sales_data_train.values)
+#After transformation, the columns are:
+#attributes = ["Item_Weight", "Item_Fat_Content", "Item_Visibility", "Item_MRP", "Outlet_Age", "Outlet_Size", "Outlet_Location_Type"] + .one_hot_coding_cols_catgs
 
 
+if __name__ == "__main__":
+    #Testing transformation
+    sales_data_train, sales_data_train_labels, sales_data_test, sales_data_test_labels = create_train_test_set(sales_data, "Item_Outlet_Sales")
+    sales_data_prepared = preprocessing_full_pipeline.fit_transform(sales_data_train.values)
 
-print('stop')
-
+    #To Do: if main then import the model (if not found then exit). if the model is found then use the test data and output predictions in CSV
