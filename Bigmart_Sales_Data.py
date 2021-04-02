@@ -408,10 +408,22 @@ def create_train_test_set(df, label_col_name):
 #After transformation, the columns are:
 #attributes = ["Item_Weight", "Item_Fat_Content", "Item_Visibility", "Item_MRP", "Outlet_Age", "Outlet_Size", "Outlet_Location_Type"] + .one_hot_coding_cols_catgs
 
-
 if __name__ == "__main__":
-    #Testing transformation
+    #Testing transformation test
     sales_data_train, sales_data_train_labels, sales_data_test, sales_data_test_labels = create_train_test_set(sales_data, "Item_Outlet_Sales")
     sales_data_prepared = preprocessing_full_pipeline.fit_transform(sales_data_train.values)
 
-    #To Do: if main then import the model (if not found then exit). if the model is found then use the test data and output predictions in CSV
+    #Output submission if model exists
+    import os
+    if os.path.exists('final_model.pkl'):
+        import joblib
+        #load the model
+        final_model = joblib.load("final_model.pkl")
+        #load data and preprocess
+        sales_data_comp = pd.read_csv('test_AbJTz2l.csv')
+        sales_data_comp_prepared = preprocessing_full_pipeline.fit_transform(sales_data_comp.values)
+        #predict and output data
+        outlet_sales_comp = final_model.predict(sales_data_comp_prepared)
+        comp_submission_export = sales_data_comp[["Item_Identifier", "Outlet_Identifier"]]
+        comp_submission_export["Item_Outlet_Sales"] = outlet_sales_comp
+        comp_submission_export.to_csv('submission.csv')

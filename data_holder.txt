@@ -28,17 +28,6 @@ Outlet_Type                  8523 non-null object ----> 1 hot encoding
 Item_Outlet_Sales            8523 non-null float64 ---> Scale feature?
 
 
-sales_data_train
-sales_data_train_labels 
-
-
-sales_data_train_num 
-sales_data_num_attr
-
-
-
-sales_data_train_cat
-sales_data_cat_attr
 
 There are couple of transformations to do here. First:
 
@@ -55,4 +44,15 @@ Outlet_Identifier: One hot encoding
 #Outlet_Location_Type: ordinal encoding
 
 Outlet_Type: one hot encoding
+
+
+sales_data_train
+sales_data_test
+
+sales_data_train_prepared
+sales_data_test_prepared
+
+sales_data_train_labels
+sales_data_test_labels
+
 
