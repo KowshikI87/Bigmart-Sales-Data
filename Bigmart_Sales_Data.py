@@ -415,15 +415,18 @@ if __name__ == "__main__":
 
     #Output submission if model exists
     import os
-    if os.path.exists('final_model.pkl'):
+    final_model_path = r"C:\Users\KI PC\OneDrive\Documents\GitHub\Bigmart-Sales-Data\final_model.pkl"
+    if os.path.exists(final_model_path):
         import joblib
         #load the model
-        final_model = joblib.load("final_model.pkl")
+        final_model = joblib.load(final_model_path)
         #load data and preprocess
-        sales_data_comp = pd.read_csv('test_AbJTz2l.csv')
+        test_data_path = r"C:\Users\KI PC\OneDrive\Documents\GitHub\Bigmart-Sales-Data\test_AbJTz2l.csv"
+        sales_data_comp = pd.read_csv(test_data_path)
         sales_data_comp_prepared = preprocessing_full_pipeline.fit_transform(sales_data_comp.values)
         #predict and output data
         outlet_sales_comp = final_model.predict(sales_data_comp_prepared)
         comp_submission_export = sales_data_comp[["Item_Identifier", "Outlet_Identifier"]]
         comp_submission_export["Item_Outlet_Sales"] = outlet_sales_comp
-        comp_submission_export.to_csv('submission.csv')
+        submission_path = r"C:\Users\KI PC\OneDrive\Documents\GitHub\Bigmart-Sales-Data\submission.csv"
+        comp_submission_export.to_csv(submission_path, index = False)
