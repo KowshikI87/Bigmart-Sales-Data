@@ -33,27 +33,6 @@ scaled_cols = [sales_data.columns.get_loc("Item_Weight"),
               ]
 
 
-def future_value(rate,periods,pmt, pv):
-    '''
-    Calculates future value from present value and annuity
-    (float, int, int, float, float) ---> (float)
-
-    Argument Names
-        rate: rate of return (expressed in percentages. Example: 8% ===> Enter 0.08)
-        periods: how many periods the money accumulates for
-        pmt: periodic deposit (assumed to be made at the end of a year)
-        pv: present value of investment
-
-    Some Extra Notes:
-        We start at Period 0 (present time). From Period 0-1, only present value/current savings earn interest
-        We assume that first periodic payment is made at the end of Period 0 or after first year
-        From Period 1-2, money accumulated so far plus periodic deposit made at the begining of Period 1 earns interest
-        At the end of Period 2, same periodic payment is made. From Period 2-3, money accumualted so far plus period deposit earns interest
-        This pattern continues till the end
-        For the last period, whatever money is accumulated plus last periodic deposit which have not had time to earn interest is returned as future value
-    '''
-
-
 class SimpleImputerCustom(BaseEstimator, TransformerMixin):
     '''
     Fill in missing values in numerical column(s) using the median strategy
@@ -397,7 +376,7 @@ preprocessing_full_pipeline = Pipeline([('num', num_pipeline),
 #Return four dataframe
 def create_train_test_set(df, label_col_name):
     from sklearn.model_selection import train_test_split
-    train_set, test_set = train_test_split(sales_data, test_size=0.2, random_state=42)
+    train_set, test_set = train_test_split(df, test_size=0.2, random_state=42)
     df_train = train_set.drop(label_col_name, axis = 1)
     df_train_labels = train_set[label_col_name].copy()
     df_test = test_set.drop(label_col_name, axis = 1)
